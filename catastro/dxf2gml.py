@@ -1,0 +1,294 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# Copyright (c) 2016 Jose Antonio Chavarría <jachavar@gmail.com>
+# Copyright (c) 2016 Alberto Gacías <alberto@migasfree.org>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+__author__ = [
+    'Jose Antonio Chavarría <jachavar@gmail.com>',
+    'Alberto Gacías <alberto@migasfree.org>',
+]
+__license__ = 'GPLv3'
+
+"""
+Descripción
+===========
+
+El script genera un fichero GML de parcela catastral según las especificaciones de Castastro.
+
+Basado en https://github.com/sigdeletras/dxf2gmlcatastro (Patricio Soriano :: SIGdeletras.com)
+
+
+Especificaciones
+================
+    * http://www.catastro.minhap.gob.es/esp/formatos_intercambio.asp
+
+    * Cada parcela debe estar en una capa en cuyo nombre se establecerá su referencia.
+
+    * No se permiten incorporar en el mismo fichero dxf parcelas con referencias catastrales y referencias locales mezcladas, todas deben ser del mismo tipo, o bien locales o bien catastrales.
+
+    * Se asume referencia catastral si la longitud de la referencia es de 14 caracteres.
+
+    * Las geometrías deben ser sólidas y estar cerradas (el primer y último punto del polígono deben ser el mismo)
+
+
+Requisitos
+==========
+
+Es necesario tener instalado Python y el módulo GDAL (python-gdal).
+
+
+Ejemplos de uso
+===============
+
+    * python dxfgmlcatastro.py <parcela1.dxf>
+         generará el fichero parcela1.gml
+
+    * python dxfgmlcatastro.py <parcela1.dxf> 25831
+         generará el fichero parcela1.gml usando el código EPSG 25831
+
+    * python dxfgmlcatastro.py <mi_directorio>
+         generará un fichero .gml por cada fichero .dxf que se encuentre en mi_directorio
+"""
+
+import os
+import sys
+import json
+import glob
+
+try:
+    from osgeo import ogr
+except ImportError:
+    print('Error: python-gdal no instalado')
+    sys.exit(1)
+
+# Sistemas de referencia de coordenadas
+EPSG_ZONES = [
+    '25828',  # ETRS89 / UTM zone 28N
+    '25829',  # ETRS89 / UTM zone 29N
+    '25830',  # ETRS89 / UTM zone 30N
+    '25831',  # ETRS89 / UTM zone 31N
+]
+EPSG_DEFAULT = '25830'
+
+CADASTRAL_REF_LEN = 14
+
+GML_TEMPLATE = u"""<?xml version="1.0" encoding="utf-8"?>
+<!-- Parcela Catastral para entregar a la D.G. del Catastro -->
+<gml:FeatureCollection xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:gmd="http://www.isotc211.org/2005/gmd" xmlns:ogc="http://www.opengis.net/ogc" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:cp="urn:x-inspire:specification:gmlas:CadastralParcels:3.0" xmlns:base="urn:x-inspire:specification:gmlas:BaseTypes:3.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:x-inspire:specification:gmlas:CadastralParcels:3.0 http://inspire.ec.europa.eu/schemas/cp/3.0/CadastralParcels.xsd" gml:id="%(namespace)s">
+%(features)s
+<!-- Si se desea entregar varias parcelas en un mismo fichero, se pondrá un nuevo featureMember para cada parcela -->
+</gml:FeatureCollection>"""
+
+
+GML_FEATURE = u"""   <gml:featureMember>
+      <cp:CadastralParcel gml:id="%(namespace)s.%(label)s">
+<!-- Superficie de la parcela en metros cuadrados. Tiene que coincidir con la calculada con las coordenadas.-->
+         <cp:areaValue uom="m2">%(area)s</cp:areaValue>
+         <cp:beginLifespanVersion xsi:nil="true" nilReason="other:unpopulated"></cp:beginLifespanVersion>
+<!-- Geometría en formato GML -->
+         <cp:geometry><!-- srs Name código del sistema de referencia en el que se dan las coordenadas, que debe coincidir con el de la cartografía catastral -->
+           <gml:MultiSurface gml:id="MultiSurface_%(namespace)s.%(label)s" srsName="urn:ogc:def:crs:EPSG::%(epsg)s">
+             <gml:surfaceMember>
+               <gml:Surface gml:id="Surface_%(namespace)s.%(label)s" srsName="urn:ogc:def:crs:EPSG::%(epsg)s">
+                  <gml:patches>
+                    <gml:PolygonPatch>
+                      <gml:exterior>
+                        <gml:LinearRing>
+<!-- Lista de coordenadas separadas por espacios o en líneas diferentes -->
+                          <gml:posList srsDimension="2">%(coords)s
+                          </gml:posList>
+                        </gml:LinearRing>
+                      </gml:exterior>
+                    </gml:PolygonPatch>
+                  </gml:patches>
+                </gml:Surface>
+              </gml:surfaceMember>
+            </gml:MultiSurface>
+         </cp:geometry>
+         <cp:inspireId>
+<!-- Identificativo local de la parcela. Sólo puede tener letras y números. Se recomienda (pero no es necesario) poner siempre un dígito de control, por ejemplo utilizando el algoritmo del NIF -->
+           <base:Identifier>
+             <base:localId>%(label)s</base:localId>
+             <base:namespace>%(base_namespace)s</base:namespace>
+           </base:Identifier>
+         </cp:inspireId>
+         <cp:label/>
+<!-- Siempre en blanco, ya que todavía no ha sido dada de alta en las bases de datos catastrales -->
+         <cp:nationalCadastralReference>%(cadastral_reference)s</cp:nationalCadastralReference>
+      </cp:CadastralParcel>
+   </gml:featureMember>
+"""
+
+
+def dxf2gml(dxf_file, code):
+    """
+    Transforma la información de la geometría de un archivo DXF
+    al estándar de Catastro en formato GML.
+
+    dxf_file: Archivo en formato DXF con la geometría de origen
+    code: Sistema de Referencia de Coordenadas del DXF (código EPSG)
+    """
+
+    if code not in EPSG_ZONES:
+        return (
+            False,
+            u'Error: El código EPSG "%s" es incorrecto' % code
+        )
+
+    namespace = ''
+    features = ''
+
+    driver = ogr.GetDriverByName('DXF')
+    data_source = driver.Open(dxf_file, 0)
+
+    layer = data_source.GetLayer()
+    info = []
+    for feature in layer:
+        data = json.loads(feature.ExportToJson())
+        reference = data["properties"]["Layer"]
+
+        geom = feature.GetGeometryRef()
+        area = geom.Area()
+
+        info.append(u'Referencia: %s, (%.4f m^2)' % (reference, area))
+
+        if len(reference) == CADASTRAL_REF_LEN:
+            cadastral_reference = reference
+            if namespace == '':
+                namespace = "ES.SDGC.CP"
+                base_namespace = namespace
+            elif not namespace == "ES.SDGC.CP":
+                return (
+                    False,
+                    u"Error: Todas las parcelas deben tener Referencia Catastral"
+                )
+        else:
+            cadastral_reference = ''
+            if namespace == '':
+                namespace = "ES.LOCAL"
+                base_namespace = "%s.CP" % namespace
+            elif not namespace == "ES.LOCAL":
+                return (
+                    False,
+                    u"Error: Todas las parcelas deben tener Referencia Local"
+                )
+
+        if not data["properties"]["Text"] == "SOLID":
+            return (
+                False,
+                u"Error: La geometría de la referencia %s debe ser sólida" % reference
+            )
+
+        if area > 0:
+            perimeter = geom.GetGeometryRef(0)
+            coords = ''
+            for i in range(0, perimeter.GetPointCount()):
+                pt = perimeter.GetPoint(i)
+                coords += "\n%s %s" % (str(pt[0]), str(pt[1]))
+
+            features += GML_FEATURE % {
+                "epsg": code,
+                "namespace": namespace,
+                "base_namespace": base_namespace,
+                "area": area,
+                "coords": coords,
+                "label": reference,
+                "cadastral_reference": cadastral_reference
+            }
+        else:
+            return (
+                False,
+                u"Error de geometría en la referencia %s. Compruebe que esté cerrada y que sea sólida" % reference
+            )
+
+    return (
+        True,
+        {
+            'info': info,
+            'gml': GML_TEMPLATE % {
+                'namespace': namespace,
+                'features': features
+            }
+        }
+    )
+
+
+def save_gml(dxf_file, code):
+    print(u'\nProcesando fichero: %s' % dxf_file)
+
+    ret, output = dxf2gml(dxf_file, code)
+    if not ret:
+        print(output)
+        print(u'Error: fichero "%s" no convertido!!!' % dxf_file)
+        return False
+
+    gml_file, _ = os.path.splitext(dxf_file)
+    gml_file += '.gml'
+    with open(gml_file, 'w') as f:
+        f.writelines(output['gml'].encode('utf-8'))
+
+    for i in output['info']:
+        print(i)
+
+    print(u'Fichero generado: %s' % gml_file)
+
+    return True
+
+
+def usage():
+    print(u'\nEjemplos de uso:')
+
+    print(u'\n  Generar un fichero GML:')
+    print(u'\t$ dxf2gml parcel1.dxf')
+
+    print(u'\n  Generar un fichero GML con un determinado código EPSG:')
+    print(u'\t$ dxf2gml parcel1.dxf 25831')
+
+    print(u'\n  Generar un fichero GML por cada fichero DXF de un directorio:')
+    print(u'\t$ dxf2gml directorio')
+
+
+def main():
+    if len(sys.argv) < 2:
+        print(u'Error: parámetros insuficientes')
+        usage()
+        sys.exit(1)
+
+    path = sys.argv[1]  # File or Directory Source
+    epsg = EPSG_DEFAULT
+    if len(sys.argv) == 3:
+        epsg = sys.argv[2]
+
+    if os.path.isfile(path):
+        ret = save_gml(path, epsg)
+        if not ret:
+            sys.exit(1)
+    elif os.path.isdir(path):
+        ret = True
+        for _file in glob.glob(os.path.join(path, '*.dxf')):
+            ret = ret and save_gml(_file, epsg)
+        if not ret:
+            sys.exit(1)
+    else:
+        print(u'Error: No se ha encontrado el fichero o directorio "%s"' % path)
+        sys.exit(1)
+
+    sys.exit(0)
+
+
+if __name__ == '__main__':
+    main()
