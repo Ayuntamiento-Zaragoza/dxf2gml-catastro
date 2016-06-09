@@ -11,7 +11,7 @@ Requisitos
 
 * Python >= 2.7
 * Django >= 1.9
-* pygdal (python-gdal)
+* pygdal (python-gdal) >= 1.10
 
 
 Especificaciones de los ficheros DXF
