@@ -164,7 +164,6 @@ def dxf2gml(dxf_file, code):
         geom = feature.GetGeometryRef()
         area = geom.Area()
 
-        info.append(u'Referencia: %s, (%.4f m^2)' % (reference, area))
 
         if len(reference) == CADASTRAL_REF_LEN:
             cadastral_reference = reference
@@ -187,13 +186,9 @@ def dxf2gml(dxf_file, code):
                     u"Error: Todas las parcelas deben tener Referencia Local"
                 )
 
-        if not data["properties"]["Text"] == "SOLID":
-            return (
-                False,
-                u"Error: La geometría de la referencia %s debe ser sólida" % reference
-            )
+        if data["properties"]["Text"] == "SOLID":
+            info.append(u'Referencia: %s, (%.4f m^2)' % (reference, area))
 
-        if area > 0:
             perimeter = geom.GetGeometryRef(0)
             coords = ''
             for i in range(0, perimeter.GetPointCount()):
@@ -210,10 +205,7 @@ def dxf2gml(dxf_file, code):
                 "cadastral_reference": cadastral_reference
             }
         else:
-            return (
-                False,
-                u"Error de geometría en la referencia %s. Compruebe que esté cerrada y que sea sólida" % reference
-            )
+            info.append(u'Referencia: %s. AVISO: Se ha encontrado una geometría no sólida' % (reference))
 
     return (
         True,
