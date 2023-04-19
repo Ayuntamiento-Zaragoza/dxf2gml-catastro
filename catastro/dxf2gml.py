@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016 Jose Antonio Chavarría <jachavar@gmail.com>
-# Copyright (c) 2016 Alberto Gacías <alberto@migasfree.org>
+# Copyright (c) 2016-2023 Jose Antonio Chavarría <jachavar@gmail.com>
+# Copyright (c) 2016-2023 Alberto Gacías <alberto@migasfree.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ __license__ = 'GPLv3'
 Descripción
 ===========
 
-El script genera un fichero GML de parcela catastral según las especificaciones de Castastro.
+El script genera un fichero GML de parcela catastral según las especificaciones de Catastro.
 
 Basado en https://github.com/sigdeletras/dxf2gmlcatastro (Patricio Soriano :: SIGdeletras.com)
 
@@ -48,19 +48,19 @@ Especificaciones
 Requisitos
 ==========
 
-Es necesario tener instalado Python y el módulo GDAL (python-gdal).
+Es necesario tener instalado Python y el módulo GDAL (python3-gdal).
 
 
 Ejemplos de uso
 ===============
 
-    * python dxfgmlcatastro.py <parcela1.dxf>
+    * python3 dxf2gml.py <parcela1.dxf>
          generará el fichero parcela1.gml
 
-    * python dxfgmlcatastro.py <parcela1.dxf> 25831
+    * python3 dx2fgml.py <parcela1.dxf> 25831
          generará el fichero parcela1.gml usando el código EPSG 25831
 
-    * python dxfgmlcatastro.py <mi_directorio>
+    * python3 dxf2gml.py <mi_directorio>
          generará un fichero .gml por cada fichero .dxf que se encuentre en mi_directorio
 """
 
@@ -72,7 +72,7 @@ import glob
 try:
     from osgeo import ogr
 except ImportError:
-    print('Error: python-gdal no instalado')
+    print('Error: python3-gdal no instalado')
     sys.exit(1)
 
 # Sistemas de referencia de coordenadas
@@ -86,7 +86,7 @@ EPSG_DEFAULT = '25830'
 
 CADASTRAL_REF_LEN = 14
 
-GML_TEMPLATE = u"""<?xml version="1.0" encoding="utf-8"?>
+GML_TEMPLATE = """<?xml version="1.0" encoding="utf-8"?>
 <!-- Parcela Catastral para entregar a la D.G. del Catastro -->
 <gml:FeatureCollection xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:gmd="http://www.isotc211.org/2005/gmd" xmlns:ogc="http://www.opengis.net/ogc" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:cp="urn:x-inspire:specification:gmlas:CadastralParcels:3.0" xmlns:base="urn:x-inspire:specification:gmlas:BaseTypes:3.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:x-inspire:specification:gmlas:CadastralParcels:3.0 http://inspire.ec.europa.eu/schemas/cp/3.0/CadastralParcels.xsd" gml:id="%(namespace)s">
 %(features)s
@@ -94,7 +94,7 @@ GML_TEMPLATE = u"""<?xml version="1.0" encoding="utf-8"?>
 </gml:FeatureCollection>"""
 
 
-GML_FEATURE = u"""   <gml:featureMember>
+GML_FEATURE = """   <gml:featureMember>
       <cp:CadastralParcel gml:id="%(namespace)s.%(label)s">
 <!-- Superficie de la parcela en metros cuadrados. Tiene que coincidir con la calculada con las coordenadas.-->
          <cp:areaValue uom="m2">%(area)s</cp:areaValue>
@@ -146,7 +146,7 @@ def dxf2gml(dxf_file, code):
     if code not in EPSG_ZONES:
         return (
             False,
-            u'Error: El código EPSG "%s" es incorrecto' % code
+            f'Error: El código EPSG "{code}" es incorrecto'
         )
 
     namespace = ''
@@ -164,7 +164,6 @@ def dxf2gml(dxf_file, code):
         geom = feature.GetGeometryRef()
         area = geom.Area()
 
-
         if len(reference) == CADASTRAL_REF_LEN:
             cadastral_reference = reference
             if namespace == '':
@@ -173,7 +172,7 @@ def dxf2gml(dxf_file, code):
             elif not namespace == "ES.SDGC.CP":
                 return (
                     False,
-                    u"Error: Todas las parcelas deben tener Referencia Catastral"
+                    "Error: Todas las parcelas deben tener Referencia Catastral"
                 )
         else:
             cadastral_reference = ''
@@ -183,7 +182,7 @@ def dxf2gml(dxf_file, code):
             elif not namespace == "ES.LOCAL":
                 return (
                     False,
-                    u"Error: Todas las parcelas deben tener Referencia Local"
+                    "Error: Todas las parcelas deben tener Referencia Local"
                 )
 
         if data["properties"]["Text"] == "SOLID":
@@ -205,7 +204,7 @@ def dxf2gml(dxf_file, code):
                 "cadastral_reference": cadastral_reference
             }
         else:
-            info.append(u'Referencia: %s. AVISO: Se ha encontrado una geometría no sólida' % (reference))
+            info.append(f'Referencia: {reference}. AVISO: Se ha encontrado una geometría no sólida')
 
     return (
         True,
@@ -220,12 +219,12 @@ def dxf2gml(dxf_file, code):
 
 
 def save_gml(dxf_file, code):
-    print(u'\nProcesando fichero: %s' % dxf_file)
+    print(f'\nProcesando fichero: {dxf_file}')
 
     ret, output = dxf2gml(dxf_file, code)
     if not ret:
         print(output)
-        print(u'Error: fichero "%s" no convertido!!!' % dxf_file)
+        print(f'Error: fichero "{dxf_file}" no convertido!!!')
         return False
 
     gml_file, _ = os.path.splitext(dxf_file)
@@ -236,27 +235,27 @@ def save_gml(dxf_file, code):
     for i in output['info']:
         print(i)
 
-    print(u'Fichero generado: %s' % gml_file)
+    print(f'Fichero generado: {gml_file}')
 
     return True
 
 
 def usage():
-    print(u'\nEjemplos de uso:')
+    print('\nEjemplos de uso:')
 
-    print(u'\n  Generar un fichero GML:')
-    print(u'\t$ dxf2gml parcel1.dxf')
+    print('\n  Generar un fichero GML:')
+    print('\t$ dxf2gml parcel1.dxf')
 
-    print(u'\n  Generar un fichero GML con un determinado código EPSG:')
-    print(u'\t$ dxf2gml parcel1.dxf 25831')
+    print('\n  Generar un fichero GML con un determinado código EPSG:')
+    print('\t$ dxf2gml parcel1.dxf 25831')
 
-    print(u'\n  Generar un fichero GML por cada fichero DXF de un directorio:')
-    print(u'\t$ dxf2gml directorio')
+    print('\n  Generar un fichero GML por cada fichero DXF de un directorio:')
+    print('\t$ dxf2gml directorio')
 
 
 def main():
     if len(sys.argv) < 2:
-        print(u'Error: parámetros insuficientes')
+        print('Error: parámetros insuficientes')
         usage()
         sys.exit(1)
 
@@ -276,7 +275,7 @@ def main():
         if not ret:
             sys.exit(1)
     else:
-        print(u'Error: No se ha encontrado el fichero o directorio "%s"' % path)
+        print(f'Error: No se ha encontrado el fichero o directorio "{path}"')
         sys.exit(1)
 
     sys.exit(0)
