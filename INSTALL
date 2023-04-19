@@ -1,14 +1,14 @@
 To install it, make sure you have these programs installed:
 
-    * Python >= 2.7
-    * python-setuptools
-    * python-stdeb (to create a DEB package)
-    * python-django >= 1.9
-    * python-gdal >= 1.10
+    * Python >= 3.6
+    * python3-setuptools
+    * python3-stdeb (to create a DEB package)
+    * python3-django >= 4.2
+    * python3-gdal >= 3.4
 
 Then, create package through this command:
 
-    $ python setup.py --command-packages=stdeb.command bdist_deb
+    $ python3 setup.py --command-packages=stdeb.command bdist_deb
 
 And finally, install package:
 
