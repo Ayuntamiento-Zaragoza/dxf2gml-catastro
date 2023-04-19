@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import django
-if django.VERSION < (1, 9, 0, 'final'):
-    print('This project requires Django 1.9.0 at least. Please, update it.')
+if django.VERSION < (4, 2, 0, 'final'):
+    print('This project requires Django 4.2.0 at least. Please, update it.')
     exit(1)
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
