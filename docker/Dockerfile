@@ -1,4 +1,4 @@
-FROM debian:jessie
+FROM debian:bullseye-slim as builder
 MAINTAINER Alberto Gacías <alberto@migasfree.org>
 
 ENV TERM=xterm \
@@ -6,18 +6,17 @@ ENV TERM=xterm \
     USER=root \
     LANG=en_US.utf8 \
     DJANGO_SETTINGS_MODULE=dxf2gml_catastro.settings \
-    _BUILD_DEPENDS='python-dev python-all debhelper unzip wget python-pip'  \
-    _DEPENDS='python2.7 python-gdal'
-
+    _BUILD_DEPENDS='python3-dev python3-all debhelper unzip wget python3-pip' \
+    _DEPENDS='python3 python3-gdal'
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends $_BUILD_DEPENDS  && \
+    apt-get install -y --no-install-recommends $_BUILD_DEPENDS && \
     apt-get install -y --no-install-recommends $_DEPENDS && \
     wget https://github.com/ayuntamiento-zaragoza/dxf2gml-catastro/archive/master.zip && \
     unzip master.zip && \
     cd dxf2gml-catastro-master && \
-    pip install -r requirements.txt &&\
-    python setup.py install && \
+    pip install -r requirements/production.txt &&\
+    python3 setup.py install && \
     cd .. && \
     rm -rf master.zip && \
     rm -rf dxf2gml-catastro-master && \
