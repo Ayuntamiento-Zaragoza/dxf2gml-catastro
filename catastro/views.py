@@ -3,13 +3,12 @@
 import os
 import json
 
+from django.conf import settings
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.conf import settings
 
 from .utils import handle_uploaded_file
-
-import dxf2gml
+from . import dxf2gml
 
 
 def get_gml(request):
@@ -42,7 +41,7 @@ def download_gml(request):
         return output
 
     response = HttpResponse(output['gml'], content_type='text/plain')
-    response['Content-Disposition'] = 'attachment; filename=%s.gml' % filename
+    response['Content-Disposition'] = f'attachment; filename={filename}.gml'
 
     return response
 
