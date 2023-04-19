@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-# Copyright (c) 2016 Jose Antonio Chavarría <jachavar@gmail.com>
+# Copyright (c) 2016-2023 Jose Antonio Chavarría <jachavar@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,8 +20,8 @@ __license__ = 'GPLv3'
 
 import sys
 
-if not hasattr(sys, 'version_info') or sys.version_info < (2, 7, 0, 'final'):
-    raise SystemExit('This project requires Python 2.7 or later.')
+if not hasattr(sys, 'version_info') or sys.version_info < (3, 6, 0, 'final'):
+    raise SystemExit('This project requires Python 3.6 or later.')
 
 import os
 PATH = os.path.dirname(__file__)
