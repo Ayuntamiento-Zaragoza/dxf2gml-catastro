@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 
-from django.conf.urls import include, url
-from django.views.generic import RedirectView
-from django.core.urlresolvers import reverse_lazy
+from django.conf.urls import include
+from django.views.generic.base import RedirectView
+from django.urls import re_path, reverse_lazy
 
 
 urlpatterns = [
-    url(
+    re_path(
         r'^$',
         RedirectView.as_view(
             url=reverse_lazy('download_gml'), permanent=True
         ),
     ),
 
-    url(r'^catastro/', include('catastro.urls')),
+    re_path(r'^catastro/', include('catastro.urls')),
 ]
