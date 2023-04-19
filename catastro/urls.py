@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-from django.conf.urls import url
+from django.urls import re_path
 
 from .views import download_gml, download_json
 
 
 urlpatterns = [
-    url(r'^gml/$', download_gml, name='download_gml'),
-    url(r'^json/$', download_json, name='download_json'),
+    re_path(r'^gml/$', download_gml, name='download_gml'),
+    re_path(r'^json/$', download_json, name='download_json'),
 ]
