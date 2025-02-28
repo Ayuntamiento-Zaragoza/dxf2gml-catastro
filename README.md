@@ -13,7 +13,7 @@ Requisitos
 
 * Python >= 3.6
 * Django >= 4.2
-* pygdal (python-gdal) >= 3.7
+* pygdal (python-gdal) >= 3.6.2
 
 
 Especificaciones de los ficheros DXF
