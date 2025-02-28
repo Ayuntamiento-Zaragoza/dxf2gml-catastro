@@ -5,13 +5,15 @@ Servicio web para la conversión de ficheros en formato DXF a [formato GML](http
 
 Basado en el proyecto [dxf2gmlcatastro](https://github.com/sigdeletras/dxf2gmlcatastro) de Patricio Soriano (SIGdeletras.com) y Marcos Manuel Ortega (Indavelopers).
 
+Basado también en el proyecto [ParCatGML](https://github.com/psigcat/ParCatGML) para actualizar el formato GML a la versión 4.0.
+
 
 Requisitos
 ==========
 
-* Python >= 2.7
-* Django >= 1.9
-* pygdal (python-gdal) >= 1.10
+* Python >= 3.6
+* Django >= 4.2
+* pygdal (python-gdal) >= 3.7
 
 
 Especificaciones de los ficheros DXF
@@ -35,4 +37,4 @@ Obtiene un JSON con información de la conversión y el fichero GML resultante.
 $ curl -F "dxf=@file.dxf" -F "code=25831" http://<server>/catastro/gml/ > file.gml
 ```
 
-Obtiene el fichero en formato GML.
+Obtiene el fichero en formato GML 4.0.
