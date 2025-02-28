@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 
+import os
+import sys
+
 import django
+
 if django.VERSION < (4, 2, 0, 'final'):
     print('This project requires Django 4.2.0 at least. Please, update it.')
-    exit(1)
+    sys.exit(1)
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-import os
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 # SECURITY WARNING: keep the secret key used in production secret!
