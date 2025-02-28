@@ -2,7 +2,7 @@ Build container
 ===============
 
 ```sh
-docker build -t dxf2gml-catrasto .
+docker build --build-arg VERSION=$(cat ../VERSION) -t dxf2gml-catrasto .
 ```
 
 Run container
