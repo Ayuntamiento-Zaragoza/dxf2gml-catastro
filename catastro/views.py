@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import os
-import json
 
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
