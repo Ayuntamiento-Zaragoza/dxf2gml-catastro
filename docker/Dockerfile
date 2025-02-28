@@ -1,4 +1,4 @@
-FROM debian:bullseye-slim as builder
+FROM debian:bookworm-slim as builder
 MAINTAINER Alberto Gacías <alberto@migasfree.org>
 
 ENV TERM=xterm \
