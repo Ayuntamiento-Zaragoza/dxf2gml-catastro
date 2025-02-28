@@ -4,7 +4,7 @@ To install it, make sure you have these programs installed:
     * python3-setuptools
     * python3-stdeb (to create a DEB package)
     * python3-django >= 4.2
-    * python3-gdal >= 3.4
+    * python3-gdal >= 3.7
 
 Then, create package through this command:
 
