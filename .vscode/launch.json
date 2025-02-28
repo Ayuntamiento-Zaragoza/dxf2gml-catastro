@@ -6,7 +6,8 @@
     "configurations": [
         {
             "name": "Python: Django",
-            "type": "python",
+            "type": "debugpy",
+            "pythonArgs": ["-Wd"],
             "request": "launch",
             "program": "${workspaceFolder}/manage.py",
             "args": [
