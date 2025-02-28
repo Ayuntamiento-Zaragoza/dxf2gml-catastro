@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2023 Jose Antonio Chavarría <jachavar@gmail.com>
+# Copyright (c) 2016-2025 Jose Antonio Chavarría <jachavar@gmail.com>
 # Copyright (c) 2016-2023 Alberto Gacías <alberto@migasfree.org>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -16,6 +16,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+import os
+import sys
+import json
+import glob
 
 __author__ = [
     'Jose Antonio Chavarría <jachavar@gmail.com>',
@@ -64,11 +69,6 @@ Ejemplos de uso
          generará un fichero .gml por cada fichero .dxf que se encuentre en mi_directorio
 """
 
-import os
-import sys
-import json
-import glob
-
 try:
     from osgeo import ogr
 except ImportError:
@@ -88,28 +88,59 @@ CADASTRAL_REF_LEN = 14
 
 GML_TEMPLATE = """<?xml version="1.0" encoding="utf-8"?>
 <!-- Parcela Catastral para entregar a la D.G. del Catastro -->
-<gml:FeatureCollection xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:gmd="http://www.isotc211.org/2005/gmd" xmlns:ogc="http://www.opengis.net/ogc" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:cp="urn:x-inspire:specification:gmlas:CadastralParcels:3.0" xmlns:base="urn:x-inspire:specification:gmlas:BaseTypes:3.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:x-inspire:specification:gmlas:CadastralParcels:3.0 http://inspire.ec.europa.eu/schemas/cp/3.0/CadastralParcels.xsd" gml:id="%(namespace)s">
+<FeatureCollection
+  xmlns:gml="http://www.opengis.net/gml/3.2"
+  xmlns:gmd="http://www.isotc211.org/2005/gmd"
+  xmlns:ogc="http://www.opengis.net/ogc"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  xmlns:cp="http://inspire.ec.europa.eu/schemas/cp/4.0"
+  xmlns:base="urn:x-inspire:specification:gmlas:BaseTypes:3.2"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.opengis.net/wfs/2.0 http://schemas.opengis.net/wfs/2.0/wfs.xsd http://inspire.ec.europa.eu/schemas/cp/4.0 http://inspire.ec.europa.eu/schemas/cp/4.0/CadastralParcels.xsd"
+  xmlns="http://www.opengis.net/wfs/2.0"
+  numberMatched="1"
+  numberReturned="1"
+  id="%(namespace)s"
+>
 %(features)s
 <!-- Si se desea entregar varias parcelas en un mismo fichero, se pondrá un nuevo featureMember para cada parcela -->
-</gml:FeatureCollection>"""
+</FeatureCollection>"""
 
 
-GML_FEATURE = """   <gml:featureMember>
+            z='<member>\n'
+            z+='<cp:CadastralParcel gml:id="ES.SDGC.CP.'+str(ref)+'">\n'
+            z+='<cp:areaValue uom="m2">'+str(area)+'</cp:areaValue>\n'
+            z+='<cp:beginLifespanVersion xsi:nil="true" nilReason="http://inspire.ec.europa.eu/codelist/VoidReasonValue/Unpopulated"></cp:beginLifespanVersion>\n'
+            z+='<cp:endLifespanVersion xsi:nil="true" nilReason="http://inspire.ec.europa.eu/codelist/VoidReasonValue/Unpopulated"></cp:endLifespanVersion>\n'
+            z+='<cp:geometry>\n'
+            z+='<gml:MultiSurface gml:id="MultiSurface_ES.SDGC.CP.'+str(ref)+'" srsName="http://www.opengis.net/def/crs/EPSG/0/'+str(epsg)+'">\n'
+            z+='<gml:surfaceMember>\n'
+            z+='<gml:Surface gml:id="Surface_ES.SDGC.CP.'+str(ref)+'" srsName="http://www.opengis.net/def/crs/EPSG/0/'+str(epsg)+'">\n'
+            z+='<gml:patches>\n<gml:PolygonPatch>\n<gml:exterior>\n<gml:LinearRing>\n'
+            z+='<gml:posList srsDimension="2" count="'+str(punN)+'">'+str(punL)+'</gml:posList>\n'
+            z+='</gml:LinearRing>\n</gml:exterior>\n</gml:PolygonPatch>\n</gml:patches>\n</gml:Surface>\n</gml:surfaceMember>\n</gml:MultiSurface>\n</cp:geometry>\n'
+            z+='<cp:inspireId xmlns:base="http://inspire.ec.europa.eu/schemas/base/3.3">\n<base:Identifier>\n'
+            z+='<base:localId>'+str(num)+'</base:localId>\n<base:namespace>ES.LOCAL.CP</base:namespace>\n</base:Identifier>\n</cp:inspireId>\n'
+            z+='<cp:label/>\n<cp:nationalCadastralReference/>\n</cp:CadastralParcel>\n'
+            z+='</member>\n'
+
+GML_FEATURE = """   <member>
       <cp:CadastralParcel gml:id="%(namespace)s.%(label)s">
 <!-- Superficie de la parcela en metros cuadrados. Tiene que coincidir con la calculada con las coordenadas.-->
          <cp:areaValue uom="m2">%(area)s</cp:areaValue>
-         <cp:beginLifespanVersion xsi:nil="true" nilReason="other:unpopulated"></cp:beginLifespanVersion>
+         <cp:beginLifespanVersion xsi:nil="true" nilReason="http://inspire.ec.europa.eu/codelist/VoidReasonValue/Unpopulated"></cp:beginLifespanVersion>
+         <cp:endLifespanVersion xsi:nil="true" nilReason="http://inspire.ec.europa.eu/codelist/VoidReasonValue/Unpopulated"></cp:endLifespanVersion>
 <!-- Geometría en formato GML -->
          <cp:geometry><!-- srs Name código del sistema de referencia en el que se dan las coordenadas, que debe coincidir con el de la cartografía catastral -->
-           <gml:MultiSurface gml:id="MultiSurface_%(namespace)s.%(label)s" srsName="urn:ogc:def:crs:EPSG::%(epsg)s">
+           <gml:MultiSurface gml:id="MultiSurface_%(namespace)s.%(label)s" srsName="http://www.opengis.net/def/crs/EPSG/0/%(epsg)s">
              <gml:surfaceMember>
-               <gml:Surface gml:id="Surface_%(namespace)s.%(label)s" srsName="urn:ogc:def:crs:EPSG::%(epsg)s">
+               <gml:Surface gml:id="Surface_%(namespace)s.%(label)s" srsName="http://www.opengis.net/def/crs/EPSG/0/%(epsg)s">
                   <gml:patches>
                     <gml:PolygonPatch>
                       <gml:exterior>
                         <gml:LinearRing>
 <!-- Lista de coordenadas separadas por espacios o en líneas diferentes -->
-                          <gml:posList srsDimension="2">%(coords)s
+                          <gml:posList srsDimension="2" count="%(len_coords)s">%(coords)s
                           </gml:posList>
                         </gml:LinearRing>
                       </gml:exterior>
@@ -119,7 +150,7 @@ GML_FEATURE = """   <gml:featureMember>
               </gml:surfaceMember>
             </gml:MultiSurface>
          </cp:geometry>
-         <cp:inspireId>
+         <cp:inspireId xmlns:base="http://inspire.ec.europa.eu/schemas/base/3.3">
 <!-- Identificativo local de la parcela. Sólo puede tener letras y números. Se recomienda (pero no es necesario) poner siempre un dígito de control, por ejemplo utilizando el algoritmo del NIF -->
            <base:Identifier>
              <base:localId>%(label)s</base:localId>
@@ -130,7 +161,7 @@ GML_FEATURE = """   <gml:featureMember>
 <!-- Siempre en blanco, ya que todavía no ha sido dada de alta en las bases de datos catastrales -->
          <cp:nationalCadastralReference>%(cadastral_reference)s</cp:nationalCadastralReference>
       </cp:CadastralParcel>
-   </gml:featureMember>
+   </member>
 """
 
 
@@ -169,7 +200,7 @@ def dxf2gml(dxf_file, code):
             if namespace == '':
                 namespace = "ES.SDGC.CP"
                 base_namespace = namespace
-            elif not namespace == "ES.SDGC.CP":
+            elif namespace != "ES.SDGC.CP":
                 return (
                     False,
                     "Error: Todas las parcelas deben tener Referencia Catastral"
@@ -178,27 +209,30 @@ def dxf2gml(dxf_file, code):
             cadastral_reference = ''
             if namespace == '':
                 namespace = "ES.LOCAL"
-                base_namespace = "%s.CP" % namespace
-            elif not namespace == "ES.LOCAL":
+                base_namespace = f"{namespace}.CP"
+            elif namespace != "ES.LOCAL":
                 return (
                     False,
                     "Error: Todas las parcelas deben tener Referencia Local"
                 )
 
         if data["properties"]["Text"] == "SOLID":
-            info.append(u'Referencia: %s, (%.4f m^2)' % (reference, area))
+            info.append(f'Referencia: {reference}, ({area:.4f} m^2)')
 
             perimeter = geom.GetGeometryRef(0)
             coords = ''
+            len_coords = 0
             for i in range(0, perimeter.GetPointCount()):
                 pt = perimeter.GetPoint(i)
-                coords += "\n%s %s" % (str(pt[0]), str(pt[1]))
+                coords += f"\n{pt[0]} {pt[1]}"
+                len_coords += 1
 
             features += GML_FEATURE % {
                 "epsg": code,
                 "namespace": namespace,
                 "base_namespace": base_namespace,
                 "area": area,
+                "len_coords": len_coords,
                 "coords": coords,
                 "label": reference,
                 "cadastral_reference": cadastral_reference
