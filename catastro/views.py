@@ -20,7 +20,7 @@ def get_gml(request):
     if not dxf:
         return HttpResponseBadRequest('Invalid parameters')
 
-    filename, _ = os.path.splitext(dxf.name)
+    # filename, _ = os.path.splitext(dxf.name)
     target = os.path.join(settings.MEDIA_ROOT, dxf.name)
     handle_uploaded_file(dxf, target)
 
@@ -35,6 +35,12 @@ def get_gml(request):
 
 @csrf_exempt
 def download_gml(request):
+    dxf = request.FILES.get('dxf')
+    if not dxf:
+        return HttpResponseBadRequest('Invalid parameters')
+
+    filename, _ = os.path.splitext(dxf.name)
+
     output = get_gml(request)
     if isinstance(output, HttpResponse):
         return output
