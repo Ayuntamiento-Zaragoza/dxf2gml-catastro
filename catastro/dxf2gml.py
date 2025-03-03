@@ -106,24 +106,6 @@ GML_TEMPLATE = """<?xml version="1.0" encoding="utf-8"?>
 <!-- Si se desea entregar varias parcelas en un mismo fichero, se pondrá un nuevo featureMember para cada parcela -->
 </FeatureCollection>"""
 
-
-            z='<member>\n'
-            z+='<cp:CadastralParcel gml:id="ES.SDGC.CP.'+str(ref)+'">\n'
-            z+='<cp:areaValue uom="m2">'+str(area)+'</cp:areaValue>\n'
-            z+='<cp:beginLifespanVersion xsi:nil="true" nilReason="http://inspire.ec.europa.eu/codelist/VoidReasonValue/Unpopulated"></cp:beginLifespanVersion>\n'
-            z+='<cp:endLifespanVersion xsi:nil="true" nilReason="http://inspire.ec.europa.eu/codelist/VoidReasonValue/Unpopulated"></cp:endLifespanVersion>\n'
-            z+='<cp:geometry>\n'
-            z+='<gml:MultiSurface gml:id="MultiSurface_ES.SDGC.CP.'+str(ref)+'" srsName="http://www.opengis.net/def/crs/EPSG/0/'+str(epsg)+'">\n'
-            z+='<gml:surfaceMember>\n'
-            z+='<gml:Surface gml:id="Surface_ES.SDGC.CP.'+str(ref)+'" srsName="http://www.opengis.net/def/crs/EPSG/0/'+str(epsg)+'">\n'
-            z+='<gml:patches>\n<gml:PolygonPatch>\n<gml:exterior>\n<gml:LinearRing>\n'
-            z+='<gml:posList srsDimension="2" count="'+str(punN)+'">'+str(punL)+'</gml:posList>\n'
-            z+='</gml:LinearRing>\n</gml:exterior>\n</gml:PolygonPatch>\n</gml:patches>\n</gml:Surface>\n</gml:surfaceMember>\n</gml:MultiSurface>\n</cp:geometry>\n'
-            z+='<cp:inspireId xmlns:base="http://inspire.ec.europa.eu/schemas/base/3.3">\n<base:Identifier>\n'
-            z+='<base:localId>'+str(num)+'</base:localId>\n<base:namespace>ES.LOCAL.CP</base:namespace>\n</base:Identifier>\n</cp:inspireId>\n'
-            z+='<cp:label/>\n<cp:nationalCadastralReference/>\n</cp:CadastralParcel>\n'
-            z+='</member>\n'
-
 GML_FEATURE = """   <member>
       <cp:CadastralParcel gml:id="%(namespace)s.%(label)s">
 <!-- Superficie de la parcela en metros cuadrados. Tiene que coincidir con la calculada con las coordenadas.-->
