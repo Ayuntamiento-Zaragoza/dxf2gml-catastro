@@ -12,7 +12,7 @@ ENV TERM=xterm \
     USER=root \
     LANG=en_US.utf8 \
     DJANGO_SETTINGS_MODULE=dxf2gml_catastro.settings \
-    _BUILD_DEPENDS='git python3-dev python3-all debhelper unzip wget libgdal-dev' \
+    _BUILD_DEPENDS='git python3-dev python3-all debhelper unzip wget libgdal-dev g++' \
     _DEPENDS='python3 python3-venv python3-minimal python3-pip'
 
 RUN apt-get update && \
