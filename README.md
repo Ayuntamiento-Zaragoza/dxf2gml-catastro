@@ -1,7 +1,7 @@
 Descripción
 ===========
 
-Servicio web para la conversión de ficheros en formato DXF a [formato GML](http://www.catastro.minhap.gob.es/esp/formatos_intercambio.asp).
+Servicio web para la conversión de ficheros en formato DXF a [formato GML](https://www.catastro.hacienda.gob.es/documentos/formatos_intercambio/Formato%20GML%20parcela%20catastral.pdf).
 
 Basado en el proyecto [dxf2gmlcatastro](https://github.com/sigdeletras/dxf2gmlcatastro) de Patricio Soriano (SIGdeletras.com) y Marcos Manuel Ortega (Indavelopers).
 
