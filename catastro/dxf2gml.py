@@ -34,12 +34,14 @@ Descripción
 
 El script genera un fichero GML de parcela catastral según las especificaciones de Catastro.
 
+https://www.catastro.hacienda.gob.es/documentos/formatos_intercambio/CP%20ejemplo%20explicativo.zip
+
 Basado en https://github.com/sigdeletras/dxf2gmlcatastro (Patricio Soriano :: SIGdeletras.com)
 
 
 Especificaciones
 ================
-    * http://www.catastro.minhap.gob.es/esp/formatos_intercambio.asp
+    * https://www.catastro.hacienda.gob.es/documentos/formatos_intercambio/Formato%20GML%20parcela%20catastral.pdf
 
     * Cada parcela debe estar en una capa en cuyo nombre se establecerá su referencia.
 
@@ -87,42 +89,39 @@ EPSG_DEFAULT = '25830'
 CADASTRAL_REF_LEN = 14
 
 GML_TEMPLATE = """<?xml version="1.0" encoding="utf-8"?>
-<!-- Parcela Catastral para entregar a la D.G. del Catastro -->
-<FeatureCollection
+<!--Empleo la información grafíca catastral en el tráfico inmobiliario. Formato INSPIRE GML Cadastral Parcel v4. -->
+<gml:FeatureCollection
   xmlns:gml="http://www.opengis.net/gml/3.2"
   xmlns:gmd="http://www.isotc211.org/2005/gmd"
   xmlns:ogc="http://www.opengis.net/ogc"
   xmlns:xlink="http://www.w3.org/1999/xlink"
   xmlns:cp="http://inspire.ec.europa.eu/schemas/cp/4.0"
-  xmlns:base="urn:x-inspire:specification:gmlas:BaseTypes:3.2"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.opengis.net/wfs/2.0 http://schemas.opengis.net/wfs/2.0/wfs.xsd http://inspire.ec.europa.eu/schemas/cp/4.0 http://inspire.ec.europa.eu/schemas/cp/4.0/CadastralParcels.xsd"
-  xmlns="http://www.opengis.net/wfs/2.0"
-  numberMatched="1"
-  numberReturned="1"
-  id="%(namespace)s"
+  xsi:schemaLocation="http://inspire.ec.europa.eu/schemas/cp/4.0 http://inspire.ec.europa.eu/schemas/cp/4.0/CadastralParcels.xsd"
+  gml:id="%(namespace)s"
 >
 %(features)s
 <!-- Si se desea entregar varias parcelas en un mismo fichero, se pondrá un nuevo featureMember para cada parcela -->
-</FeatureCollection>"""
+</gml:FeatureCollection>"""
 
-GML_FEATURE = """   <member>
+GML_FEATURE = """   <gml:featureMember>
       <cp:CadastralParcel gml:id="%(namespace)s.%(label)s">
 <!-- Superficie de la parcela en metros cuadrados. Tiene que coincidir con la calculada con las coordenadas.-->
          <cp:areaValue uom="m2">%(area)s</cp:areaValue>
-         <cp:beginLifespanVersion xsi:nil="true" nilReason="http://inspire.ec.europa.eu/codelist/VoidReasonValue/Unpopulated"></cp:beginLifespanVersion>
-         <cp:endLifespanVersion xsi:nil="true" nilReason="http://inspire.ec.europa.eu/codelist/VoidReasonValue/Unpopulated"></cp:endLifespanVersion>
+         <cp:beginLifespanVersion xsi:nil="true" nilReason="other:unpopulated"></cp:beginLifespanVersion>
 <!-- Geometría en formato GML -->
-         <cp:geometry><!-- srs Name código del sistema de referencia en el que se dan las coordenadas, que debe coincidir con el de la cartografía catastral -->
-           <gml:MultiSurface gml:id="MultiSurface_%(namespace)s.%(label)s" srsName="http://www.opengis.net/def/crs/EPSG/0/%(epsg)s">
+         <cp:geometry>
+         <!-- srs Name código del sistema de referencia en el que se dan las coordenadas, que debe coincidir con el de la cartografía catastral -->
+         <!-- El sistema de referencia de la cartografía catastral varía según provincia, siendo accesible desde la consulta de cartografía en Sede -->
+           <gml:MultiSurface gml:id="MultiSurface_%(namespace)s.%(label)s" srsName="urn:ogc:def:crs:EPSG::%(epsg)s">
              <gml:surfaceMember>
-               <gml:Surface gml:id="Surface_%(namespace)s.%(label)s" srsName="http://www.opengis.net/def/crs/EPSG/0/%(epsg)s">
+               <gml:Surface gml:id="Surface_%(namespace)s.%(label)s" srsName="urn:ogc:def:crs:EPSG::%(epsg)s">
                   <gml:patches>
                     <gml:PolygonPatch>
                       <gml:exterior>
                         <gml:LinearRing>
 <!-- Lista de coordenadas separadas por espacios o en líneas diferentes -->
-                          <gml:posList srsDimension="2" count="%(len_coords)s">%(coords)s
+                          <gml:posList srsDimension="2">%(coords)s
                           </gml:posList>
                         </gml:LinearRing>
                       </gml:exterior>
@@ -140,10 +139,10 @@ GML_FEATURE = """   <member>
            </base:Identifier>
          </cp:inspireId>
          <cp:label/>
-<!-- Siempre en blanco, ya que todavía no ha sido dada de alta en las bases de datos catastrales -->
+         <!--Siempre en blanco, ya que todavíaa no ha sido dada de alta en las bases de datos catastrales.-->
          <cp:nationalCadastralReference>%(cadastral_reference)s</cp:nationalCadastralReference>
       </cp:CadastralParcel>
-   </member>
+   </gml:featureMember>
 """
 
 
@@ -163,6 +162,7 @@ def dxf2gml(dxf_file, code):
         )
 
     namespace = ''
+    base_namespace = ''
     features = ''
 
     driver = ogr.GetDriverByName('DXF')
@@ -214,7 +214,7 @@ def dxf2gml(dxf_file, code):
                 "namespace": namespace,
                 "base_namespace": base_namespace,
                 "area": area,
-                "len_coords": len_coords,
+                # "len_coords": len_coords,
                 "coords": coords,
                 "label": reference,
                 "cadastral_reference": cadastral_reference
